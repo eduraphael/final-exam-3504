@@ -32,5 +32,5 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: |
-          ${{ secrets.DOCKERHUB_USER }}/${{secrets.DOCKERHUB_IMAGE}}:latest
+          ${{ secrets.DOCKERHUB_USER }}/${{ secrets.DOCKERHUB_IMAGE }}:latest
 
