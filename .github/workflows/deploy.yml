@@ -21,7 +21,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_PWD }}
 
     - name: Pull Docker Image
-      run: docker pull ${{ secrets.DOCKERHUB_USER }}/${{secrets.DOCKERHUB_IMAGE}}:latest
+      run: docker pull ${{ secrets.DOCKERHUB_USER }}/${{ secrets.DOCKERHUB_IMAGE }}:latest
 
     - name: Executing remote ssh commands using ssh key
       uses: appleboy/ssh-action@master
