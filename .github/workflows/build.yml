@@ -6,11 +6,11 @@ on:
       - main
 
 env:
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-  EC2_PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
-  EC2_HOST: ${{ secrets.EC2_HOST }}
-  EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USER }}
+  DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PWD }}
+  EC2_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+  EC2_HOST: ${{ secrets.EC2_PUBLIC_IP }}
+  EC2_USERNAME: ${{ secrets.EC2_USER }}
 
 jobs:
   build:
@@ -26,8 +26,8 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PWD }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
@@ -35,7 +35,7 @@ jobs:
           context: ./
           push: true
           dockerfile: ./Dockerfile
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/techco:latest
+          tags: ${{ secrets.DOCKERHUB_USER }}/techco:latest
 
   deploy:
     needs: build
@@ -48,20 +48,20 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_PASSWORD }}
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_PWD }}
 
       - name: Set permissions for private key
         run: |
-          echo "${{ secrets.EC2_PRIVATE_KEY }}" > key.pem
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
           chmod 600 key.pem
       - name: Pull Docker image on EC2 instance
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/techco:latest'
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_PUBLIC_IP }} 'sudo docker pull ${{ secrets.DOCKERHUB_USER }}/techco:latest'
       - name: Stop and remove existing container on EC2 instance
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo docker stop techco || true'
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo docker rm techco || true'
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_PUBLIC_IP }} 'sudo docker stop techco || true'
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_PUBLIC_IP }} 'sudo docker rm techco || true'
       - name: Run new container on EC2 instance
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo docker run -d --name techco -p 8080:80 ${{ secrets.DOCKERHUB_USERNAME }}/techco:latest'
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_PUBLIC_IP }} 'sudo docker run -d --name techco -p 8080:80 ${{ secrets.DOCKERHUB_USER }}/techco:latest'
